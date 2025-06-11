@@ -122,9 +122,71 @@ def plot_fval_vs_qubits(dir, algo_list, save_destination=None):
     if save_destination != None:
         plt.savefig(save_destination+'/fval_vs_qubit_maxcor_2_high_acc_new.pdf', format='pdf')
     plt.show()
+
+def plot_error_vs_iter(dir, algo_list, n, save_destination=None):
+    output = {algo.__name__: [] for algo in algo_list}
+    nQubits = []
+    # Plot the data
+    markers = ['o', 'd', 's', 'x', '^', 'v']
+    marker_iter = iter(markers)
+    # plt.figure(figsize=(10, 6))
+    fontSize=10
+    plt.rcParams.update({
+    'font.size': fontSize,         # Set font size for labels, legends, and ticks
+    'axes.labelsize': fontSize,    # X and Y labels
+    'legend.fontsize': fontSize,   # Legend
+    'xtick.labelsize': fontSize,   # X-axis tick labels
+    'ytick.labelsize': fontSize    # Y-axis tick labels
+    })
+    map = {'EMD': 'MD', 'approx_MEG': 'low-rank MEG', 'LBSDA':'LBSDA', 'd_LBSDA':'d-sample LBSDA', 'qse_apg':'CG-APG', 'LBFGS':'L-BFGS', 'AccGD':'Acc-GD'}
+
+    #get file names
+    for filename in os.listdir(dir):
+        file_path = os.path.join(dir, filename)
+        # check for .pickle file
+        if filename.endswith('.pickle'):
+            #read content
+            with open(file_path, 'rb') as f:
+                data = pickle.load(f)
+                if data['nQubits'] == n:
+                    data_n = data
+                    print(data_n.keys())
+                    
+    fval_min = np.inf
+    for algo in output.keys():
+        if algo in data_n:
+            fval = data_n[algo]['fval']
+            fval_min = np.minimum(fval_min, np.min(fval))      
     
+    N = 4**(n)* 100
+    
+    for algo in output.keys():
+        if algo in data_n: 
+            fval = data_n[algo]['fval']
+            error = fval-fval_min #-1/N * np.log(0.95), 1e-4
+            output[algo] = np.abs(error)
+
+    
+    plt.figure()
+    for algo_name, err in output.items():
+        plt.plot(np.arange(len(err)), err,  label=map[algo_name])  
+    plt.axhline(y=1e-4, color='black', linestyle='--', linewidth=1, label='Low-acc margin')
+    plt.axhline(y=-1/N * np.log(0.95), color='gray', linestyle='--', linewidth=1, label='High-acc margin' )        
+    plt.yscale('log')
+    plt.xlabel('Iteration')
+    plt.ylabel('Error')
+    plt.legend(ncol=2)
+    print(save_destination+'/error_vs_iter_maxcor_2.pdf')
+    # plt.legend(["MD", "low-rank MEG", "LBSDA", "d-sample LBSDA", "CG-APG", "L-BFGS", 'Acc-GD'], loc='upper left')
+    plt.grid(True, which='both', linestyle='--', alpha = 1.0 , linewidth = 0.3, dashes=(2, 10))
+    if save_destination != None:
+        plt.savefig(save_destination+f'/error_vs_iter_maxcor_2_n_{n}.pdf', format='pdf')
+    plt.show()
 
 
+
+
+'''
 def plot_fidelity(dir, algo_list):
 
     output = {algo.__name__: [] for algo in algo_list}
@@ -173,8 +235,7 @@ def plot_fval(dir, algo_list):
                     plt.semilogy(data[algo]['elapsed_time'], data[algo]['fval']-fval_min, label= algo, color =color_map[algo], linewidth=1)  
             plt.legend()
             plt.title('fval, n = ' + str(data['nQubits']))                 
-
-
+'''
 
             
         
